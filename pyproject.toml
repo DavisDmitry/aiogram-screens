@@ -12,7 +12,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 
 [build-system]
-requires = ["uv_build>=0.11.19,<0.12"]
+requires = ["uv_build>=0.13,<0.14"]
 build-backend = "uv_build"
 
 [tool.uv]
@@ -51,6 +51,6 @@ linters = [
 ]
 tests = [
     "pytest>=9.2.0",
-    "pytest-asyncio>=1.4.1.post1",
+    "pytest-asyncio>=1.5.0",
     "pytest-cov>=7.1.0",
 ]
