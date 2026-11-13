@@ -18,8 +18,43 @@ build-backend = "uv_build"
 [tool.uv]
 default-groups = ["linters", "tests"]
 
-[tool.isort]
-profile = "black"
+[tool.ruff]
+# target-version is taken from requires-python.
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "F",     # pyflakes: unused imports and names, undefined names
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade: syntax for the supported Python versions
+    "B",     # flake8-bugbear: likely bugs and design problems
+    "A",     # flake8-builtins: shadowed builtins
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "RET",   # flake8-return
+    "PIE",   # flake8-pie: unnecessary code
+    "PERF",  # perflint
+    "ISC",   # flake8-implicit-str-concat
+    "LOG",   # flake8-logging
+    "G",     # flake8-logging-format
+    "T20",   # flake8-print
+    "ASYNC", # flake8-async
+    "PT",    # flake8-pytest-style
+    "TID",   # flake8-tidy-imports
+    "PGH",   # pygrep-hooks: blanket type: ignore and noqa
+    "RUF",   # ruff-specific rules
+]
+ignore = [
+    "E501", # line length is handled by the formatter
+]
+
+[tool.ruff.lint.flake8-bugbear]
+# aiogram's Default("...") is an immutable marker for bot-wide defaults,
+# meant to be used as an argument default (B008, RUF009).
+extend-immutable-calls = ["aiogram.client.default.Default"]
 
 [tool.mypy]
 strict = true
@@ -45,9 +80,8 @@ exclude_also = [
 [dependency-groups]
 linters = [
     "mypy>=2.4.1",
-    "black>=26.10.1",
-    "isort>=9.0.2",
     "nox>=2026.10.20",
+    "ruff>=0.17.5",
 ]
 tests = [
     "pytest>=9.2.0",

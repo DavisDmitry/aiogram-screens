@@ -241,8 +241,8 @@ uv sync                    # create .venv with the linters and tests groups
 uv run pytest              # quick test run on the pinned Python (3.11)
 
 uvx nox                    # lint + tests on Python 3.11–3.14 + combined coverage
-uvx nox -s format          # isort + black
-uvx nox -s lint            # isort, black and mypy --strict
+uvx nox -s format          # ruff check --fix + ruff format
+uvx nox -s lint            # ruff check, ruff format --check, mypy --strict
 uvx nox -s tests-3.14      # tests on one Python version
 ```
 

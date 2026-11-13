@@ -177,5 +177,4 @@ class ScreenMeta(abc.ABCMeta):
         )
         namespace["__screen_no_init__"] = frozenset(no_init)
         namespace["__screen_defaults__"] = defaults
-        cls = super().__new__(mcls, name, bases, namespace, **kwargs)
-        return cls
+        return super().__new__(mcls, name, bases, namespace, **kwargs)
