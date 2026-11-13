@@ -22,7 +22,7 @@ from aiogram_screens import (
     MessageScreen,
     field,
 )
-from aiogram_screens.screens import ScreenMeta
+from aiogram_screens._meta import ScreenMeta
 
 KEYBOARD = InlineKeyboardMarkup(
     inline_keyboard=[[InlineKeyboardButton(text="ok", callback_data="ok")]]

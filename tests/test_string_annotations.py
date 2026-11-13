@@ -12,7 +12,7 @@ import pytest
 from aiogram.methods import SendMessage
 
 from aiogram_screens import MessageScreen
-from aiogram_screens.screens import _is_classvar
+from aiogram_screens._meta import _is_classvar
 
 AliasedClassVar = ClassVar
 NotClassVar = int
