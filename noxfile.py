@@ -20,18 +20,18 @@ def sync(session: nox.Session, *groups: str) -> None:
     )
 
 
-@nox.session
-def format(session: nox.Session) -> None:
+@nox.session(name="format")
+def format_(session: nox.Session) -> None:
     sync(session, "linters")
-    session.run("isort", *SOURCES)
-    session.run("black", *SOURCES)
+    session.run("ruff", "check", "--fix", *SOURCES)
+    session.run("ruff", "format", *SOURCES)
 
 
 @nox.session
 def lint(session: nox.Session) -> None:
     sync(session, "linters", "tests")
-    session.run("isort", "--check-only", "--diff", *SOURCES)
-    session.run("black", "--check", "--diff", *SOURCES)
+    session.run("ruff", "check", *SOURCES)
+    session.run("ruff", "format", "--check", "--diff", *SOURCES)
     session.run("mypy", *SOURCES)
 
 

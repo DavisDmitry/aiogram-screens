@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import typing
 import typing as t
-from typing import ClassVar
-from typing import ClassVar as CV
-from typing import ForwardRef
+from typing import ClassVar, ForwardRef
+from typing import ClassVar as CV  # noqa: N817 - the alias is what's tested
 
 import pytest
 from aiogram.methods import SendMessage
