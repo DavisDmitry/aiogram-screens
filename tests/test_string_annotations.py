@@ -17,7 +17,7 @@ AliasedClassVar = ClassVar
 NotClassVar = int
 
 
-class Prefixed(MessageScreen):
+class Prefixed(MessageScreen[str]):
     prefix: ClassVar[str] = ">"
     suffix: typing.ClassVar[str] = "<"
     name: str
@@ -40,7 +40,7 @@ def test_fields_and_defaults() -> None:
 
 
 def test_classvar_aliases() -> None:
-    class Aliased(MessageScreen):
+    class Aliased(MessageScreen[str]):
         imported_as: CV[int] = 1
         module_alias: t.ClassVar[int] = 2
         # Type checkers reject a plain assignment as a ClassVar alias,

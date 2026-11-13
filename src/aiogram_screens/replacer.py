@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import Final, Generic, TypedDict, TypeVar
+from typing import Any, Final, Generic, TypedDict, TypeVar, overload
 
 from aiogram.client.default import Default
 from aiogram.methods import EditMessageText, SendMessage, SendRichMessage
 from aiogram.types import (
     InaccessibleMessage,
+    InputRichMessage,
     LinkPreviewOptions,
     Message,
     ReplyParameters,
@@ -14,7 +15,9 @@ from aiogram.types import (
 from aiogram_screens.safe import safe_call
 from aiogram_screens.screens import EditableMessageScreen, MessageScreen
 
-S = TypeVar("S", bound=MessageScreen)
+# Covariant, so Replacer[Greeting] matches the Replacer[MessageScreen[str]]
+# overloads below; the screen is read-only, so covariance is safe.
+S_co = TypeVar("S_co", bound=MessageScreen[Any], covariant=True)
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -30,11 +33,11 @@ class MessageParams(TypedDict, total=False):
     direct_messages_topic_id: int | None
 
 
-class Replacer(Generic[S]):
+class Replacer(Generic[S_co]):
     __slots__ = ("screen",)
 
-    def __init__(self, screen: S):
-        self.screen: Final[S] = screen
+    def __init__(self, screen: S_co) -> None:
+        self.screen: Final[S_co] = screen
 
     @staticmethod
     def _get_message_params(message: Message, params: MessageParams) -> MessageParams:
@@ -44,6 +47,30 @@ class Replacer(Generic[S]):
             params["direct_messages_topic_id"] = message.direct_messages_topic.topic_id
         return params
 
+    @overload
+    async def replace(
+        self: "Replacer[MessageScreen[str]]",
+        message: Message | InaccessibleMessage,
+        *,
+        parse_mode: str | Default | None = ...,
+        link_preview_options: LinkPreviewOptions | Default | None = ...,
+        disable_notification: bool | None = ...,
+        protect_content: bool | Default | None = ...,
+        allow_paid_broadcast: bool | None = ...,
+        message_effect_id: str | None = ...,
+    ) -> SendMessage: ...
+    @overload
+    async def replace(
+        self: "Replacer[MessageScreen[InputRichMessage]]",
+        message: Message | InaccessibleMessage,
+        *,
+        parse_mode: str | Default | None = ...,
+        link_preview_options: LinkPreviewOptions | Default | None = ...,
+        disable_notification: bool | None = ...,
+        protect_content: bool | Default | None = ...,
+        allow_paid_broadcast: bool | None = ...,
+        message_effect_id: str | None = ...,
+    ) -> SendRichMessage: ...
     async def replace(
         self,
         message: Message | InaccessibleMessage,
@@ -76,6 +103,30 @@ class Replacer(Generic[S]):
             **message_params,
         )
 
+    @overload
+    async def edit_or_replace(
+        self: "Replacer[MessageScreen[str]]",
+        message: Message | InaccessibleMessage,
+        *,
+        parse_mode: str | Default | None = ...,
+        link_preview_options: LinkPreviewOptions | Default | None = ...,
+        disable_notification: bool | None = ...,
+        protect_content: bool | Default | None = ...,
+        allow_paid_broadcast: bool | None = ...,
+        message_effect_id: str | None = ...,
+    ) -> SendMessage | EditMessageText: ...
+    @overload
+    async def edit_or_replace(
+        self: "Replacer[MessageScreen[InputRichMessage]]",
+        message: Message | InaccessibleMessage,
+        *,
+        parse_mode: str | Default | None = ...,
+        link_preview_options: LinkPreviewOptions | Default | None = ...,
+        disable_notification: bool | None = ...,
+        protect_content: bool | Default | None = ...,
+        allow_paid_broadcast: bool | None = ...,
+        message_effect_id: str | None = ...,
+    ) -> SendRichMessage | EditMessageText: ...
     async def edit_or_replace(
         self,
         message: Message | InaccessibleMessage,
@@ -107,6 +158,34 @@ class Replacer(Generic[S]):
             link_preview_options=link_preview_options,
         )
 
+    @overload
+    async def new(
+        self: "Replacer[MessageScreen[str]]",
+        message: Message | InaccessibleMessage,
+        *,
+        parse_mode: str | Default | None = ...,
+        link_preview_options: LinkPreviewOptions | Default | None = ...,
+        disable_notification: bool | None = ...,
+        protect_content: bool | Default | None = ...,
+        allow_paid_broadcast: bool | None = ...,
+        message_effect_id: str | None = ...,
+        reply_parameters: NewReplyParameters | None = ...,
+        suggested_post_parameters: SuggestedPostParameters | None = ...,
+    ) -> SendMessage: ...
+    @overload
+    async def new(
+        self: "Replacer[MessageScreen[InputRichMessage]]",
+        message: Message | InaccessibleMessage,
+        *,
+        parse_mode: str | Default | None = ...,
+        link_preview_options: LinkPreviewOptions | Default | None = ...,
+        disable_notification: bool | None = ...,
+        protect_content: bool | Default | None = ...,
+        allow_paid_broadcast: bool | None = ...,
+        message_effect_id: str | None = ...,
+        reply_parameters: NewReplyParameters | None = ...,
+        suggested_post_parameters: SuggestedPostParameters | None = ...,
+    ) -> SendRichMessage: ...
     async def new(
         self,
         message: Message | InaccessibleMessage,

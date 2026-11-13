@@ -28,12 +28,12 @@ KEYBOARD = InlineKeyboardMarkup(
 )
 
 
-class Plain(MessageScreen):
+class Plain(MessageScreen[str]):
     def create_text(self) -> str:
         return "plain"
 
 
-class Editable(EditableMessageScreen):
+class Editable(EditableMessageScreen[str]):
     def create_text(self) -> str:
         return "editable"
 
