@@ -62,7 +62,8 @@ jobs:
           pattern: coverage-*
           merge-multiple: true
       - run: uvx nox -s coverage
-      - uses: codecov/codecov-action@v7
+      # Pinned to a commit: this third-party action receives a secret.
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
