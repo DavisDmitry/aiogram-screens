@@ -2,9 +2,11 @@ import abc
 from typing import (
     Any,
     ClassVar,
+    Generic,
     NamedTuple,
     Self,
     TypeAlias,
+    TypeVar,
     cast,
     final,
     overload,
@@ -33,6 +35,9 @@ from aiogram.types import (
 from aiogram_screens._meta import FrozenScreenError, ScreenMeta
 
 ScreenText: TypeAlias = str | InputRichMessage
+# The text type a screen produces: str for regular messages, InputRichMessage
+# for rich ones. It decides which method send() builds.
+TextT = TypeVar("TextT", str, InputRichMessage)
 
 
 class ScreenValues(NamedTuple):
@@ -47,7 +52,7 @@ class _ScreenStorage:
     __screen_values__: ScreenValues
 
 
-class BaseScreen(_ScreenStorage, metaclass=ScreenMeta):
+class BaseScreen(_ScreenStorage, Generic[TextT], metaclass=ScreenMeta):
     __screen_fields__: ClassVar[tuple[str, ...]]
     __screen_no_init__: ClassVar[frozenset[str]]
     __screen_defaults__: ClassVar[dict[str, Any]]
@@ -102,14 +107,50 @@ class BaseScreen(_ScreenStorage, metaclass=ScreenMeta):
         return
 
     @abc.abstractmethod
-    def create_text(self) -> ScreenText:
+    def create_text(self) -> TextT:
         pass
 
     def create_reply_markup(self) -> InlineKeyboardMarkup | ReplyKeyboardMarkup | None:
         return None
 
 
-class MessageScreen(BaseScreen):
+class TextMessageScreen(BaseScreen[TextT]):
+    @overload
+    def send(
+        self: "TextMessageScreen[str]",
+        chat_id: ChatIdUnion,
+        *,
+        business_connection_id: str | None = ...,
+        message_thread_id: int | None = ...,
+        direct_messages_topic_id: int | None = ...,
+        parse_mode: str | Default | None = ...,
+        link_preview_options: LinkPreviewOptions | Default | None = ...,
+        disable_notification: bool | None = ...,
+        protect_content: bool | Default | None = ...,
+        allow_paid_broadcast: bool | None = ...,
+        message_effect_id: str | None = ...,
+        reply_parameters: ReplyParameters | None = ...,
+        suggested_post_parameters: SuggestedPostParameters | None = ...,
+        ephemeral_message_parameters: EphemeralMessageParameters | None = ...,
+    ) -> SendMessage: ...
+    @overload
+    def send(
+        self: "TextMessageScreen[InputRichMessage]",
+        chat_id: ChatIdUnion,
+        *,
+        business_connection_id: str | None = ...,
+        message_thread_id: int | None = ...,
+        direct_messages_topic_id: int | None = ...,
+        parse_mode: str | Default | None = ...,
+        link_preview_options: LinkPreviewOptions | Default | None = ...,
+        disable_notification: bool | None = ...,
+        protect_content: bool | Default | None = ...,
+        allow_paid_broadcast: bool | None = ...,
+        message_effect_id: str | None = ...,
+        reply_parameters: ReplyParameters | None = ...,
+        suggested_post_parameters: SuggestedPostParameters | None = ...,
+        ephemeral_message_parameters: EphemeralMessageParameters | None = ...,
+    ) -> SendRichMessage: ...
     def send(
         self,
         chat_id: ChatIdUnion,
@@ -165,7 +206,7 @@ class MessageScreen(BaseScreen):
         )
 
 
-class EditableMessageScreen(MessageScreen):
+class EditableTextMessageScreen(TextMessageScreen[TextT]):
     def create_reply_markup(self) -> InlineKeyboardMarkup | None:
         return None
 
@@ -241,7 +282,7 @@ class EditableMessageScreen(MessageScreen):
         )
 
 
-class CallbackQueryAnswerScreen(BaseScreen):
+class CallbackQueryAnswerScreen(BaseScreen[str]):
     @abc.abstractmethod
     def create_text(self) -> str:
         pass

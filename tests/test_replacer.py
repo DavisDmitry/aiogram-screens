@@ -14,13 +14,15 @@ from aiogram.types import (
     InaccessibleMessage,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    PhotoSize,
+    RichMessage,
 )
 
 from aiogram_screens import (
-    EditableMessageScreen,
-    MessageScreen,
+    EditableTextMessageScreen,
     NewReplyParameters,
     Replacer,
+    TextMessageScreen,
 )
 
 KEYBOARD = InlineKeyboardMarkup(
@@ -28,12 +30,12 @@ KEYBOARD = InlineKeyboardMarkup(
 )
 
 
-class Plain(MessageScreen):
+class Plain(TextMessageScreen[str]):
     def create_text(self) -> str:
         return "plain"
 
 
-class Editable(EditableMessageScreen):
+class Editable(EditableTextMessageScreen[str]):
     def create_text(self) -> str:
         return "editable"
 
@@ -131,6 +133,30 @@ async def test_edit_or_replace_edits_editable_screen(
     assert (method.chat_id, method.message_id) == (100, 42)
     assert method.text == "editable"
     assert method.reply_markup == KEYBOARD
+
+
+async def test_edit_or_replace_edits_rich_message(
+    safe_call: FakeSafeCall, make_message: Any
+) -> None:
+    message = make_message(text=None, rich_message=RichMessage(blocks=[]))
+    method = await Replacer(Editable()).edit_or_replace(message)
+    assert safe_call.calls == []
+    assert isinstance(method, EditMessageText)
+
+
+async def test_edit_or_replace_replaces_media_message(
+    safe_call: FakeSafeCall, make_message: Any
+) -> None:
+    # EditMessageText can't turn a media message into a text one.
+    message = make_message(
+        text=None,
+        photo=[PhotoSize(file_id="f", file_unique_id="u", width=1, height=1)],
+        caption="old",
+    )
+    method = await Replacer(Editable()).edit_or_replace(message)
+    assert safe_call.types == [DeleteMessage]
+    assert isinstance(method, SendMessage)
+    assert method.text == "editable"
 
 
 async def test_edit_or_replace_replaces_plain_screen(
