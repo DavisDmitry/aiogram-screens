@@ -1,5 +1,7 @@
 # aiogram-screens
 
+[![codecov](https://codecov.io/gh/DavisDmitry/aiogram-screens/graph/badge.svg)](https://codecov.io/gh/DavisDmitry/aiogram-screens)
+
 Declarative screens for [aiogram 3](https://github.com/aiogram/aiogram) bots.
 
 A **screen** is a small frozen class that describes one bot message: its fields

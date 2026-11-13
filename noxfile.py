@@ -52,3 +52,4 @@ def coverage(session: nox.Session) -> None:
     sync(session, "tests")
     session.run("coverage", "combine")
     session.run("coverage", "report", "--show-missing")
+    session.run("coverage", "xml")
