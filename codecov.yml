@@ -1,0 +1,15 @@
+coverage:
+  status:
+    # Overall coverage must stay at 100%.
+    project:
+      default:
+        target: 100%
+    # Lines changed in a pull request must be fully covered.
+    patch:
+      default:
+        target: 100%
+
+comment:
+  layout: "condensed_header, diff, files"
+  # Comment only when coverage changes.
+  require_changes: true

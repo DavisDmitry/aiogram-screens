@@ -62,3 +62,9 @@ jobs:
           pattern: coverage-*
           merge-multiple: true
       - run: uvx nox -s coverage
+      - uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          disable_search: true
+          fail_ci_if_error: true
