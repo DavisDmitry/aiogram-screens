@@ -10,14 +10,14 @@ from typing import ClassVar as CV  # noqa: N817 - the alias is what's tested
 import pytest
 from aiogram.methods import SendMessage
 
-from aiogram_screens import MessageScreen
+from aiogram_screens import TextMessageScreen
 from aiogram_screens._meta import _is_classvar
 
 AliasedClassVar = ClassVar
 NotClassVar = int
 
 
-class Prefixed(MessageScreen[str]):
+class Prefixed(TextMessageScreen[str]):
     prefix: ClassVar[str] = ">"
     suffix: typing.ClassVar[str] = "<"
     name: str
@@ -40,7 +40,7 @@ def test_fields_and_defaults() -> None:
 
 
 def test_classvar_aliases() -> None:
-    class Aliased(MessageScreen[str]):
+    class Aliased(TextMessageScreen[str]):
         imported_as: CV[int] = 1
         module_alias: t.ClassVar[int] = 2
         # Type checkers reject a plain assignment as a ClassVar alias,

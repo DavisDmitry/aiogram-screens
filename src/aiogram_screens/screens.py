@@ -114,10 +114,10 @@ class BaseScreen(_ScreenStorage, Generic[TextT], metaclass=ScreenMeta):
         return None
 
 
-class MessageScreen(BaseScreen[TextT]):
+class TextMessageScreen(BaseScreen[TextT]):
     @overload
     def send(
-        self: "MessageScreen[str]",
+        self: "TextMessageScreen[str]",
         chat_id: ChatIdUnion,
         *,
         business_connection_id: str | None = ...,
@@ -135,7 +135,7 @@ class MessageScreen(BaseScreen[TextT]):
     ) -> SendMessage: ...
     @overload
     def send(
-        self: "MessageScreen[InputRichMessage]",
+        self: "TextMessageScreen[InputRichMessage]",
         chat_id: ChatIdUnion,
         *,
         business_connection_id: str | None = ...,
@@ -206,7 +206,7 @@ class MessageScreen(BaseScreen[TextT]):
         )
 
 
-class EditableMessageScreen(MessageScreen[TextT]):
+class EditableTextMessageScreen(TextMessageScreen[TextT]):
     def create_reply_markup(self) -> InlineKeyboardMarkup | None:
         return None
 

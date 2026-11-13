@@ -3,19 +3,19 @@ from aiogram_screens.replacer import NewReplyParameters, Replacer
 from aiogram_screens.safe import safe_call
 from aiogram_screens.screens import (
     CallbackQueryAnswerScreen,
-    EditableMessageScreen,
-    MessageScreen,
+    EditableTextMessageScreen,
     ScreenText,
+    TextMessageScreen,
 )
 
 __all__ = (
     "CallbackQueryAnswerScreen",
-    "EditableMessageScreen",
+    "EditableTextMessageScreen",
     "FrozenScreenError",
-    "MessageScreen",
     "NewReplyParameters",
     "Replacer",
     "ScreenText",
+    "TextMessageScreen",
     "field",
     "safe_call",
 )

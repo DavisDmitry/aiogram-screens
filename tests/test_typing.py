@@ -9,20 +9,20 @@ from typing import Any, assert_type
 from aiogram.methods import EditMessageText, SendMessage, SendRichMessage
 from aiogram.types import InputRichMessage
 
-from aiogram_screens import EditableMessageScreen, MessageScreen, Replacer
+from aiogram_screens import EditableTextMessageScreen, Replacer, TextMessageScreen
 
 
-class Text(EditableMessageScreen[str]):
+class Text(EditableTextMessageScreen[str]):
     def create_text(self) -> str:
         return "text"
 
 
-class Rich(EditableMessageScreen[InputRichMessage]):
+class Rich(EditableTextMessageScreen[InputRichMessage]):
     def create_text(self) -> InputRichMessage:
         return InputRichMessage(html="<b>rich</b>")
 
 
-class Mismatch(MessageScreen[str]):
+class Mismatch(TextMessageScreen[str]):
     # Type checkers must reject a rich text in a str screen. If mypy stops
     # reporting it, warn_unused_ignores fails the lint session.
     def create_text(self) -> InputRichMessage:  # type: ignore[override]

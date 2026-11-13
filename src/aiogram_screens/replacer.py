@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Final, Generic, TypedDict, TypeVar, overload
 
 from aiogram.client.default import Default
+from aiogram.enums import ContentType
 from aiogram.methods import EditMessageText, SendMessage, SendRichMessage
 from aiogram.types import (
     InaccessibleMessage,
@@ -13,11 +14,15 @@ from aiogram.types import (
 )
 
 from aiogram_screens.safe import safe_call
-from aiogram_screens.screens import EditableMessageScreen, MessageScreen
+from aiogram_screens.screens import EditableTextMessageScreen, TextMessageScreen
 
-# Covariant, so Replacer[Greeting] matches the Replacer[MessageScreen[str]]
+# Messages that EditMessageText can edit. A media message can't become a text
+# one by editing, so text screens replace it instead.
+_TEXT_CONTENT_TYPES = frozenset({ContentType.TEXT, ContentType.RICH_MESSAGE})
+
+# Covariant, so Replacer[Greeting] matches the Replacer[TextMessageScreen[str]]
 # overloads below; the screen is read-only, so covariance is safe.
-S_co = TypeVar("S_co", bound=MessageScreen[Any], covariant=True)
+S_co = TypeVar("S_co", bound=TextMessageScreen[Any], covariant=True)
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -49,7 +54,7 @@ class Replacer(Generic[S_co]):
 
     @overload
     async def replace(
-        self: "Replacer[MessageScreen[str]]",
+        self: "Replacer[TextMessageScreen[str]]",
         message: Message | InaccessibleMessage,
         *,
         parse_mode: str | Default | None = ...,
@@ -61,7 +66,7 @@ class Replacer(Generic[S_co]):
     ) -> SendMessage: ...
     @overload
     async def replace(
-        self: "Replacer[MessageScreen[InputRichMessage]]",
+        self: "Replacer[TextMessageScreen[InputRichMessage]]",
         message: Message | InaccessibleMessage,
         *,
         parse_mode: str | Default | None = ...,
@@ -105,7 +110,7 @@ class Replacer(Generic[S_co]):
 
     @overload
     async def edit_or_replace(
-        self: "Replacer[MessageScreen[str]]",
+        self: "Replacer[TextMessageScreen[str]]",
         message: Message | InaccessibleMessage,
         *,
         parse_mode: str | Default | None = ...,
@@ -117,7 +122,7 @@ class Replacer(Generic[S_co]):
     ) -> SendMessage | EditMessageText: ...
     @overload
     async def edit_or_replace(
-        self: "Replacer[MessageScreen[InputRichMessage]]",
+        self: "Replacer[TextMessageScreen[InputRichMessage]]",
         message: Message | InaccessibleMessage,
         *,
         parse_mode: str | Default | None = ...,
@@ -140,8 +145,10 @@ class Replacer(Generic[S_co]):
         allow_paid_broadcast: bool | None = None,
         message_effect_id: str | None = None,
     ) -> SendMessage | SendRichMessage | EditMessageText:
-        if isinstance(message, InaccessibleMessage) or not isinstance(
-            self.screen, EditableMessageScreen
+        if (
+            isinstance(message, InaccessibleMessage)
+            or message.content_type not in _TEXT_CONTENT_TYPES
+            or not isinstance(self.screen, EditableTextMessageScreen)
         ):
             return await self.replace(
                 message,
@@ -160,7 +167,7 @@ class Replacer(Generic[S_co]):
 
     @overload
     async def new(
-        self: "Replacer[MessageScreen[str]]",
+        self: "Replacer[TextMessageScreen[str]]",
         message: Message | InaccessibleMessage,
         *,
         parse_mode: str | Default | None = ...,
@@ -174,7 +181,7 @@ class Replacer(Generic[S_co]):
     ) -> SendMessage: ...
     @overload
     async def new(
-        self: "Replacer[MessageScreen[InputRichMessage]]",
+        self: "Replacer[TextMessageScreen[InputRichMessage]]",
         message: Message | InaccessibleMessage,
         *,
         parse_mode: str | Default | None = ...,

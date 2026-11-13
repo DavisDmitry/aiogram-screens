@@ -17,9 +17,9 @@ from aiogram.types import (
 
 from aiogram_screens import (
     CallbackQueryAnswerScreen,
-    EditableMessageScreen,
+    EditableTextMessageScreen,
     FrozenScreenError,
-    MessageScreen,
+    TextMessageScreen,
     field,
 )
 from aiogram_screens._meta import ScreenMeta
@@ -29,13 +29,13 @@ KEYBOARD = InlineKeyboardMarkup(
 )
 
 
-def sent_text(screen: MessageScreen[str]) -> str:
+def sent_text(screen: TextMessageScreen[str]) -> str:
     method = screen.send(1)
     assert isinstance(method, SendMessage)
     return method.text
 
 
-class Greeting(MessageScreen[str]):
+class Greeting(TextMessageScreen[str]):
     name: str
     count: int = 1
 
@@ -43,7 +43,7 @@ class Greeting(MessageScreen[str]):
         return f"{self.name} x{self.count}"
 
 
-class Menu(EditableMessageScreen[str]):
+class Menu(EditableTextMessageScreen[str]):
     title: str
 
     def create_text(self) -> str:
@@ -89,7 +89,7 @@ def test_screen_values_is_not_a_field() -> None:
 
 
 def test_classvar_is_not_a_field() -> None:
-    class WithClassVar(MessageScreen[str]):
+    class WithClassVar(TextMessageScreen[str]):
         prefix: ClassVar[str] = ">"
         name: str
 
@@ -122,7 +122,7 @@ def test_slots_are_forbidden(slots: tuple[str, ...]) -> None:
 
 
 def test_abstract_create_text() -> None:
-    class NoText(MessageScreen[str]):
+    class NoText(TextMessageScreen[str]):
         pass
 
     with pytest.raises(TypeError, match="abstract"):
@@ -132,7 +132,7 @@ def test_abstract_create_text() -> None:
 def test_values_are_computed_once() -> None:
     calls: list[str] = []
 
-    class Counted(MessageScreen[str]):
+    class Counted(TextMessageScreen[str]):
         def create_text(self) -> str:
             calls.append("text")
             return "t"
@@ -144,7 +144,7 @@ def test_values_are_computed_once() -> None:
 
 
 def test_post_init_runs_before_create_text() -> None:
-    class WithPostInit(MessageScreen[str]):
+    class WithPostInit(TextMessageScreen[str]):
         name: str
 
         def __post_init__(self) -> None:
@@ -182,7 +182,7 @@ def test_frozen_error_is_attribute_error() -> None:
 def test_init_is_forbidden() -> None:
     with pytest.raises(TypeError, match="must not define __init__"):
 
-        class WithInit(MessageScreen[str]):
+        class WithInit(TextMessageScreen[str]):
             def __init__(self) -> None:
                 pass
 
@@ -193,11 +193,11 @@ def test_init_is_forbidden() -> None:
 @pytest.mark.parametrize("keyword", ["frozen", "eq", "order", "kw_only", "slots"])
 def test_dataclass_class_keywords_are_rejected(keyword: str) -> None:
     with pytest.raises(TypeError, match=f"class keywords: '{keyword}'"):
-        ScreenMeta("Bad", (MessageScreen,), {}, **{keyword: True})
+        ScreenMeta("Bad", (TextMessageScreen,), {}, **{keyword: True})
 
 
 def test_init_subclass_keywords_pass_through() -> None:
-    class Tagged(MessageScreen[str]):
+    class Tagged(TextMessageScreen[str]):
         tag: ClassVar[str] = ""
 
         def __init_subclass__(cls, tag: str = "", **kwargs: Any) -> None:
@@ -216,7 +216,7 @@ def test_init_subclass_keywords_pass_through() -> None:
 # --- field(init=False) ---
 
 
-class Computed(MessageScreen[str]):
+class Computed(TextMessageScreen[str]):
     name: str
     greeting: str = field(init=False)
     tag: str = field(default="t", init=False)
@@ -239,7 +239,7 @@ def test_init_false_field_is_not_accepted(name: str) -> None:
 
 
 def test_init_false_field_must_be_set() -> None:
-    class Broken(MessageScreen[str]):
+    class Broken(TextMessageScreen[str]):
         value: int = field(init=False)
 
         def create_text(self) -> str:
@@ -258,7 +258,7 @@ def test_redeclared_field_returns_to_init() -> None:
 
 
 def test_field_with_default_only() -> None:
-    class WithField(MessageScreen[str]):
+    class WithField(TextMessageScreen[str]):
         count: int = field(default=3)
 
         def create_text(self) -> str:
@@ -268,7 +268,7 @@ def test_field_with_default_only() -> None:
     assert WithField(count=4).count == 4
 
 
-# --- MessageScreen.send ---
+# --- TextMessageScreen.send ---
 
 
 def test_send_text() -> None:
@@ -293,7 +293,7 @@ def test_send_without_markup() -> None:
 def test_send_rich_message() -> None:
     rich = InputRichMessage(html="<b>hi</b>")
 
-    class Rich(MessageScreen[InputRichMessage]):
+    class Rich(TextMessageScreen[InputRichMessage]):
         def create_text(self) -> InputRichMessage:
             return rich
 
@@ -303,7 +303,7 @@ def test_send_rich_message() -> None:
     assert method.direct_messages_topic_id == 3
 
 
-# --- EditableMessageScreen.edit ---
+# --- EditableTextMessageScreen.edit ---
 
 
 def test_edit_by_message(make_message: Any) -> None:
@@ -339,7 +339,7 @@ def test_edit_without_target() -> None:
 def test_edit_rich_message() -> None:
     rich = InputRichMessage(html="<b>hi</b>")
 
-    class Rich(EditableMessageScreen[InputRichMessage]):
+    class Rich(EditableTextMessageScreen[InputRichMessage]):
         def create_text(self) -> InputRichMessage:
             return rich
 

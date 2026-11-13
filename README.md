@@ -11,10 +11,10 @@ message. A screen doesn't send anything by itself — it builds aiogram methods
 with a bot.
 
 ```python
-from aiogram_screens import MessageScreen
+from aiogram_screens import TextMessageScreen
 
 
-class Welcome(MessageScreen[str]):
+class Welcome(TextMessageScreen[str]):
     name: str
 
     def create_text(self) -> str:
@@ -48,8 +48,8 @@ Requires Python 3.11+ and aiogram 3.31+.
 
 | Class | Builds | Use for |
 |---|---|---|
-| `MessageScreen[T]` | `send()` | Messages that are only sent |
-| `EditableMessageScreen[T]` | `send()`, `edit()` → `EditMessageText` | Messages that are sent and later edited in place |
+| `TextMessageScreen[T]` | `send()` | Messages that are only sent |
+| `EditableTextMessageScreen[T]` | `send()`, `edit()` → `EditMessageText` | Messages that are sent and later edited in place |
 | `CallbackQueryAnswerScreen` | `answer()` → `AnswerCallbackQuery` | Callback query notifications and alerts |
 
 `create_reply_markup()` is optional and returns `None` by default.
@@ -61,16 +61,16 @@ decides what `send()` builds:
 
 | Screen | `create_text()` returns | `send()` builds |
 |---|---|---|
-| `MessageScreen[str]` | `str` | `SendMessage` |
-| `MessageScreen[InputRichMessage]` | `InputRichMessage` | `SendRichMessage` |
+| `TextMessageScreen[str]` | `str` | `SendMessage` |
+| `TextMessageScreen[InputRichMessage]` | `InputRichMessage` | `SendRichMessage` |
 
 ```python
 from aiogram.types import InputRichMessage
 
-from aiogram_screens import MessageScreen
+from aiogram_screens import TextMessageScreen
 
 
-class Report(MessageScreen[InputRichMessage]):
+class Report(TextMessageScreen[InputRichMessage]):
     title: str
 
     def create_text(self) -> InputRichMessage:
@@ -84,7 +84,7 @@ Type checkers know the exact method type: `send()` of a `str` screen returns
 `SendMessage`, of a rich screen `SendRichMessage`, and a `create_text()` that
 doesn't match the type parameter is reported as an error. `Replacer` methods
 follow the same types. The type parameter is required: there is no default, so
-write `MessageScreen[str]`, not `MessageScreen`.
+write `TextMessageScreen[str]`, not `TextMessageScreen`.
 
 `parse_mode` and `link_preview_options` apply only to text messages; a rich
 message carries its formatting itself.
@@ -99,10 +99,10 @@ from typing import ClassVar
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from aiogram_screens import EditableMessageScreen
+from aiogram_screens import EditableTextMessageScreen
 
 
-class Counter(EditableMessageScreen[str]):
+class Counter(EditableTextMessageScreen[str]):
     title: ClassVar[str] = "Counter"  # ClassVar is not a field
     value: int = 0
 
@@ -153,10 +153,10 @@ or assign it in `__post_init__`; a screen that leaves such a field unset raises
 `TypeError`.
 
 ```python
-from aiogram_screens import MessageScreen, field
+from aiogram_screens import TextMessageScreen, field
 
 
-class Order(MessageScreen[str]):
+class Order(TextMessageScreen[str]):
     price: int
     quantity: int
     total: int = field(init=False)
@@ -238,7 +238,7 @@ async def increment(query: CallbackQuery) -> TelegramMethod[Any] | None:
 | Method | What happens to the old message | New message |
 |---|---|---|
 | `replace(message)` | Deleted; if deleting fails, its keyboard is removed instead | Sent |
-| `edit_or_replace(message)` | Edited in place if the screen is an `EditableMessageScreen` and the message is accessible; otherwise as `replace` | Sent only on fallback |
+| `edit_or_replace(message)` | Edited in place if the screen is an `EditableTextMessageScreen` and the message is an accessible text or rich message; otherwise as `replace` (a media message can't be edited into a text one) | Sent only on fallback |
 | `new(message)` | Its keyboard is removed | Sent; with `reply_parameters=NewReplyParameters(...)` it replies to the old message |
 
 > [!IMPORTANT]
