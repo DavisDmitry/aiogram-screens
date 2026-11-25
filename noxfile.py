@@ -3,7 +3,7 @@ import nox
 nox.options.default_venv_backend = "uv"
 nox.options.sessions = ["lint", "tests", "coverage"]
 
-PYTHONS = ["3.11", "3.12", "3.13", "3.14"]
+PYTHONS = ["3.11", "3.12", "3.13", "3.14", "3.15"]
 SOURCES = ["src", "tests", "noxfile.py"]
 
 
@@ -41,7 +41,7 @@ def tests(session: nox.Session) -> None:
     session.run(
         "pytest",
         "--cov",
-        "--cov-report=",
+        "--cov-report=term-missing",
         *session.posargs,
         env={"COVERAGE_FILE": f".coverage.{session.python}"},
     )

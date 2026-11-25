@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 from typing import (
     Any,
@@ -117,7 +119,7 @@ class BaseScreen(_ScreenStorage, Generic[TextT], metaclass=ScreenMeta):
 class TextMessageScreen(BaseScreen[TextT]):
     @overload
     def send(
-        self: "TextMessageScreen[str]",
+        self: TextMessageScreen[str],
         chat_id: ChatIdUnion,
         *,
         business_connection_id: str | None = ...,
@@ -135,14 +137,12 @@ class TextMessageScreen(BaseScreen[TextT]):
     ) -> SendMessage: ...
     @overload
     def send(
-        self: "TextMessageScreen[InputRichMessage]",
+        self: TextMessageScreen[InputRichMessage],
         chat_id: ChatIdUnion,
         *,
         business_connection_id: str | None = ...,
         message_thread_id: int | None = ...,
         direct_messages_topic_id: int | None = ...,
-        parse_mode: str | Default | None = ...,
-        link_preview_options: LinkPreviewOptions | Default | None = ...,
         disable_notification: bool | None = ...,
         protect_content: bool | Default | None = ...,
         allow_paid_broadcast: bool | None = ...,
@@ -212,7 +212,7 @@ class EditableTextMessageScreen(TextMessageScreen[TextT]):
 
     @overload
     def edit(
-        self,
+        self: EditableTextMessageScreen[str],
         *,
         message: Message,
         parse_mode: str | Default | None = ...,
@@ -220,7 +220,7 @@ class EditableTextMessageScreen(TextMessageScreen[TextT]):
     ) -> EditMessageText: ...
     @overload
     def edit(
-        self,
+        self: EditableTextMessageScreen[str],
         *,
         chat_id: ChatIdUnion,
         message_id: int,
@@ -230,11 +230,31 @@ class EditableTextMessageScreen(TextMessageScreen[TextT]):
     ) -> EditMessageText: ...
     @overload
     def edit(
-        self,
+        self: EditableTextMessageScreen[str],
         *,
         inline_message_id: str,
         parse_mode: str | Default | None = ...,
         link_preview_options: LinkPreviewOptions | Default | None = ...,
+    ) -> EditMessageText: ...
+    @overload
+    def edit(
+        self: EditableTextMessageScreen[InputRichMessage],
+        *,
+        message: Message,
+    ) -> EditMessageText: ...
+    @overload
+    def edit(
+        self: EditableTextMessageScreen[InputRichMessage],
+        *,
+        chat_id: ChatIdUnion,
+        message_id: int,
+        business_connection_id: str | None = ...,
+    ) -> EditMessageText: ...
+    @overload
+    def edit(
+        self: EditableTextMessageScreen[InputRichMessage],
+        *,
+        inline_message_id: str,
     ) -> EditMessageText: ...
     def edit(
         self,
