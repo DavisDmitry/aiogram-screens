@@ -5,7 +5,7 @@ description = "Declarative, frozen message screens for aiogram 3 bots"
 authors = [
     {name = "DmitryDavis",email = "dmitrydavis@protonmail.com"},
 ]
-dependencies = ["aiogram>=3.31.0,<4.0"]
+dependencies = ["aiogram>=3.33.0,<4.0"]
 requires-python = ">=3.11"
 readme = "README.md"
 license = "MIT"

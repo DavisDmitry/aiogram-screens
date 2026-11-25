@@ -3,7 +3,13 @@ from typing import Any, Final, Generic, TypedDict, TypeVar, overload
 
 from aiogram.client.default import Default
 from aiogram.enums import ContentType
-from aiogram.methods import EditMessageText, SendMessage, SendRichMessage
+from aiogram.methods import (
+    DeleteBusinessMessages,
+    DeleteMessage,
+    EditMessageText,
+    SendMessage,
+    SendRichMessage,
+)
 from aiogram.types import (
     InaccessibleMessage,
     InputRichMessage,
@@ -69,8 +75,6 @@ class Replacer(Generic[S_co]):
         self: "Replacer[TextMessageScreen[InputRichMessage]]",
         message: Message | InaccessibleMessage,
         *,
-        parse_mode: str | Default | None = ...,
-        link_preview_options: LinkPreviewOptions | Default | None = ...,
         disable_notification: bool | None = ...,
         protect_content: bool | Default | None = ...,
         allow_paid_broadcast: bool | None = ...,
@@ -92,7 +96,15 @@ class Replacer(Generic[S_co]):
         message_params = MessageParams()
 
         if isinstance(message, Message):
-            success, _ = await safe_call(message.delete())
+            method: DeleteMessage | DeleteBusinessMessages
+            if message.business_connection_id:
+                method = DeleteBusinessMessages(
+                    business_connection_id=message.business_connection_id,
+                    message_ids=[message.message_id],
+                )
+            else:
+                method = message.delete()
+            success, _ = await safe_call(method)
             if not success:
                 await safe_call(message.delete_reply_markup())
             self._get_message_params(message, message_params)
@@ -125,8 +137,6 @@ class Replacer(Generic[S_co]):
         self: "Replacer[TextMessageScreen[InputRichMessage]]",
         message: Message | InaccessibleMessage,
         *,
-        parse_mode: str | Default | None = ...,
-        link_preview_options: LinkPreviewOptions | Default | None = ...,
         disable_notification: bool | None = ...,
         protect_content: bool | Default | None = ...,
         allow_paid_broadcast: bool | None = ...,
@@ -184,8 +194,6 @@ class Replacer(Generic[S_co]):
         self: "Replacer[TextMessageScreen[InputRichMessage]]",
         message: Message | InaccessibleMessage,
         *,
-        parse_mode: str | Default | None = ...,
-        link_preview_options: LinkPreviewOptions | Default | None = ...,
         disable_notification: bool | None = ...,
         protect_content: bool | Default | None = ...,
         allow_paid_broadcast: bool | None = ...,
