@@ -21,9 +21,12 @@ jobs:
         with:
           persist-credentials: false
       # setup-uv doesn't publish major tags, only full versions.
+      # Each job gets its own cache key: a shared one makes the jobs race for
+      # the same key, so most of them fail to save the cache at all.
       - uses: astral-sh/setup-uv@v10.4.0
         with:
           enable-cache: true
+          cache-suffix: lint
       - run: uvx nox -s lint
 
   tests:
@@ -39,6 +42,7 @@ jobs:
       - uses: astral-sh/setup-uv@v10.4.0
         with:
           enable-cache: true
+          cache-suffix: tests-${{ matrix.python }}
       - run: uvx nox -s tests-${{ matrix.python }}
       - uses: actions/upload-artifact@v7
         with:
@@ -57,6 +61,7 @@ jobs:
       - uses: astral-sh/setup-uv@v10.4.0
         with:
           enable-cache: true
+          cache-suffix: coverage
       - uses: actions/download-artifact@v8
         with:
           pattern: coverage-*
