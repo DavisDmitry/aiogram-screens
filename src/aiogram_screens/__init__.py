@@ -4,9 +4,10 @@ from aiogram_screens.safe import safe_call
 from aiogram_screens.screens import (
     CallbackQueryAnswerScreen,
     EditableTextMessageScreen,
-    ScreenText,
     TextMessageScreen,
+    WidgetScreen,
 )
+from aiogram_screens.widget import Widget
 
 __all__ = (
     "CallbackQueryAnswerScreen",
@@ -14,8 +15,9 @@ __all__ = (
     "FrozenScreenError",
     "NewReplyParameters",
     "Replacer",
-    "ScreenText",
     "TextMessageScreen",
+    "Widget",
+    "WidgetScreen",
     "field",
     "safe_call",
 )

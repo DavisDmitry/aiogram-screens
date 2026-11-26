@@ -7,7 +7,6 @@ from typing import (
     Generic,
     NamedTuple,
     Self,
-    TypeAlias,
     TypeVar,
     cast,
     final,
@@ -20,6 +19,7 @@ from aiogram.methods import (
     EditMessageText,
     SendMessage,
     SendRichMessage,
+    SendWidget,
 )
 from aiogram.types import (
     CallbackQuery,
@@ -35,26 +35,23 @@ from aiogram.types import (
 )
 
 from aiogram_screens._meta import FrozenScreenError, ScreenMeta
+from aiogram_screens.widget import Widget
 
-ScreenText: TypeAlias = str | InputRichMessage
 # The text type a screen produces: str for regular messages, InputRichMessage
 # for rich ones. It decides which method send() builds.
-TextT = TypeVar("TextT", str, InputRichMessage)
+TextT = TypeVar("TextT", bound=str | InputRichMessage)
 
-
-class ScreenValues(NamedTuple):
-    text: ScreenText
-    reply_markup: InlineKeyboardMarkup | ReplyKeyboardMarkup | None
+_V = TypeVar("_V")
 
 
 # Kept outside ScreenMeta so dataclass_transform doesn't treat it as a field:
 # fields are only collected from dataclass-like classes.
-class _ScreenStorage:
+class _ScreenStorage(Generic[_V]):
     __slots__ = ("__screen_values__",)
-    __screen_values__: ScreenValues
+    __screen_values__: _V
 
 
-class BaseScreen(_ScreenStorage, Generic[TextT], metaclass=ScreenMeta):
+class BaseScreen(Generic[_V], _ScreenStorage[_V], metaclass=ScreenMeta):
     __screen_fields__: ClassVar[tuple[str, ...]]
     __screen_no_init__: ClassVar[frozenset[str]]
     __screen_defaults__: ClassVar[dict[str, Any]]
@@ -92,11 +89,7 @@ class BaseScreen(_ScreenStorage, Generic[TextT], metaclass=ScreenMeta):
                 f"{cls.__name__}.__post_init__() must set init=False fields: "
                 + ", ".join(map(repr, sorted(unset)))
             )
-        object.__setattr__(
-            self,
-            "__screen_values__",
-            ScreenValues(self.create_text(), self.create_reply_markup()),
-        )
+        object.__setattr__(self, "__screen_values__", self._create_values())
         return self
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -109,14 +102,26 @@ class BaseScreen(_ScreenStorage, Generic[TextT], metaclass=ScreenMeta):
         return
 
     @abc.abstractmethod
+    def _create_values(self) -> _V:
+        pass
+
+
+class _TextScreenValues(Generic[TextT], NamedTuple):
+    text: TextT
+    reply_markup: InlineKeyboardMarkup | ReplyKeyboardMarkup | None
+
+
+class TextMessageScreen(Generic[TextT], BaseScreen[_TextScreenValues[TextT]]):
+    @abc.abstractmethod
     def create_text(self) -> TextT:
         pass
 
     def create_reply_markup(self) -> InlineKeyboardMarkup | ReplyKeyboardMarkup | None:
         return None
 
+    def _create_values(self) -> _TextScreenValues[TextT]:
+        return _TextScreenValues(self.create_text(), self.create_reply_markup())
 
-class TextMessageScreen(BaseScreen[TextT]):
     @overload
     def send(
         self: TextMessageScreen[str],
@@ -206,7 +211,7 @@ class TextMessageScreen(BaseScreen[TextT]):
         )
 
 
-class EditableTextMessageScreen(TextMessageScreen[TextT]):
+class EditableTextMessageScreen(Generic[TextT], TextMessageScreen[TextT]):
     def create_reply_markup(self) -> InlineKeyboardMarkup | None:
         return None
 
@@ -279,9 +284,7 @@ class EditableTextMessageScreen(TextMessageScreen[TextT]):
             message_id = message.message_id
             business_connection_id = message.business_connection_id
 
-        content, reply_markup = cast(
-            tuple[ScreenText, InlineKeyboardMarkup | None], self.__screen_values__
-        )
+        content, reply_markup = self.__screen_values__
         if isinstance(content, str):
             text = content
             rich_message = None
@@ -297,19 +300,83 @@ class EditableTextMessageScreen(TextMessageScreen[TextT]):
             inline_message_id=inline_message_id,
             parse_mode=parse_mode,
             link_preview_options=link_preview_options,
-            reply_markup=reply_markup,
+            reply_markup=cast(InlineKeyboardMarkup | None, reply_markup),
             rich_message=rich_message,
         )
 
 
-class CallbackQueryAnswerScreen(BaseScreen[str]):
+class _WidgetScreenValues(NamedTuple):
+    widget: Widget
+    chat_data: str | None
+    caption: str | None
+    reply_markup: InlineKeyboardMarkup | None
+
+
+class WidgetScreen(BaseScreen[_WidgetScreenValues]):
+    @abc.abstractmethod
+    def create_widget(self) -> Widget:
+        pass
+
+    def create_chat_data(self) -> str | None:
+        return None
+
+    def create_caption(self) -> str | None:
+        return None
+
+    def create_reply_markup(self) -> InlineKeyboardMarkup | None:
+        return None
+
+    def _create_values(self) -> _WidgetScreenValues:
+        return _WidgetScreenValues(
+            self.create_widget(),
+            self.create_chat_data(),
+            self.create_caption(),
+            reply_markup=self.create_reply_markup(),
+        )
+
+    def send(
+        self,
+        chat_id: ChatIdUnion,
+        *,
+        message_thread_id: int | None = None,
+        parse_mode: str | Default | None = Default("parse_mode"),
+        show_caption_above_media: bool | Default | None = Default(
+            "show_caption_above_media"
+        ),
+        disable_notification: bool | None = None,
+        protect_content: bool | Default | None = Default("protect_content"),
+        allow_paid_broadcast: bool | None = None,
+        message_effect_id: str | None = None,
+        reply_parameters: ReplyParameters | None = None,
+    ) -> SendWidget:
+        widget, chat_data, caption, reply_markup = self.__screen_values__
+        return SendWidget(
+            chat_id=chat_id,
+            html=widget.html,
+            message_thread_id=message_thread_id,
+            width=widget.width,
+            height=widget.height,
+            chat_data=chat_data,
+            caption=caption,
+            parse_mode=parse_mode,
+            show_caption_above_media=show_caption_above_media,
+            allow_queries=widget.allow_queries,
+            disable_notification=disable_notification,
+            protect_content=protect_content,
+            allow_paid_broadcast=allow_paid_broadcast,
+            message_effect_id=message_effect_id,
+            reply_parameters=reply_parameters,
+            reply_markup=reply_markup,
+        )
+
+
+class CallbackQueryAnswerScreen(BaseScreen[_TextScreenValues[str]]):
     @abc.abstractmethod
     def create_text(self) -> str:
         pass
 
-    @final
-    def create_reply_markup(self) -> None:
-        return None
+    def _create_values(self) -> _TextScreenValues[str]:
+        return _TextScreenValues(self.create_text(), None)
 
     def answer(
         self,
@@ -317,7 +384,7 @@ class CallbackQueryAnswerScreen(BaseScreen[str]):
         show_alert: bool | None = None,
         cache_time: int | None = None,
     ) -> AnswerCallbackQuery:
-        text = cast(str, self.__screen_values__[0])
+        text = self.__screen_values__.text
 
         if isinstance(query_or_id, CallbackQuery):
             return query_or_id.answer(

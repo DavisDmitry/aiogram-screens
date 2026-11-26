@@ -6,10 +6,16 @@ each expression has exactly the stated type.
 
 from typing import Any, assert_type
 
-from aiogram.methods import EditMessageText, SendMessage, SendRichMessage
+from aiogram.methods import EditMessageText, SendMessage, SendRichMessage, SendWidget
 from aiogram.types import InputRichMessage
 
-from aiogram_screens import EditableTextMessageScreen, Replacer, TextMessageScreen
+from aiogram_screens import (
+    EditableTextMessageScreen,
+    Replacer,
+    TextMessageScreen,
+    Widget,
+    WidgetScreen,
+)
 
 
 class Text(EditableTextMessageScreen[str]):
@@ -20,6 +26,11 @@ class Text(EditableTextMessageScreen[str]):
 class Rich(EditableTextMessageScreen[InputRichMessage]):
     def create_text(self) -> InputRichMessage:
         return InputRichMessage(html="<b>rich</b>")
+
+
+class Chart(WidgetScreen):
+    def create_widget(self) -> Widget:
+        return Widget("<b>chart</b>")
 
 
 class Mismatch(TextMessageScreen[str]):
@@ -50,6 +61,15 @@ async def _replacer_types(message: Any) -> None:
     assert_type(await rich.new(message), SendRichMessage)
     assert_type(await text.edit_or_replace(message), SendMessage | EditMessageText)
     assert_type(await rich.edit_or_replace(message), SendRichMessage | EditMessageText)
+
+
+async def _widget_types(message: Any) -> None:
+    assert_type(Chart().send(1), SendWidget)
+    widget = Replacer(Chart())
+    assert_type(widget, Replacer[Chart])
+    assert_type(await widget.replace(message), SendWidget)
+    assert_type(await widget.edit_or_replace(message), SendWidget)
+    assert_type(await widget.new(message), SendWidget)
 
 
 def test_replacer_types_are_checked_statically() -> None:

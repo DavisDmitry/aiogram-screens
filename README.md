@@ -5,10 +5,10 @@
 Declarative screens for [aiogram 3](https://github.com/aiogram/aiogram) bots.
 
 A **screen** is a small frozen class that describes one bot message: its fields
-are the data, `create_text()` and `create_reply_markup()` turn that data into a
-message. A screen doesn't send anything by itself — it builds aiogram methods
-(`SendMessage`, `EditMessageText`, …) that you return from a handler or await
-with a bot.
+are the data, `create_text()` (or `create_widget()`) and `create_reply_markup()`
+turn that data into a message. A screen doesn't send anything by itself — it
+builds aiogram methods (`SendMessage`, `EditMessageText`, …) that you return
+from a handler or await with a bot.
 
 ```python
 from aiogram_screens import TextMessageScreen
@@ -42,7 +42,7 @@ To pin a specific commit or tag, append it after `@`:
 uv add git+https://github.com/DavisDmitry/aiogram-screens.git@<commit-or-tag>
 ```
 
-Requires Python 3.11+ and aiogram 3.31+.
+Requires Python 3.11+ and aiogram 3.33+.
 
 ## Screens
 
@@ -50,6 +50,7 @@ Requires Python 3.11+ and aiogram 3.31+.
 |---|---|---|
 | `TextMessageScreen[T]` | `send()` | Messages that are only sent |
 | `EditableTextMessageScreen[T]` | `send()`, `edit()` → `EditMessageText` | Messages that are sent and later edited in place |
+| `WidgetScreen` | `send()` → `SendWidget` | [Widgets](https://core.telegram.org/bots/api#sendwidget) |
 | `CallbackQueryAnswerScreen` | `answer()` → `AnswerCallbackQuery` | Callback query notifications and alerts |
 
 `create_reply_markup()` is optional and returns `None` by default.
@@ -89,6 +90,38 @@ write `TextMessageScreen[str]`, not `TextMessageScreen`.
 `parse_mode` and `link_preview_options` apply only to text messages; a rich
 message carries its formatting itself.
 
+### Widgets
+
+A `WidgetScreen` sends a [widget](https://core.telegram.org/bots/api#sendwidget):
+an HTML page rendered by Telegram next to the chat. `create_widget()` returns a
+`Widget`, and `send()` builds `SendWidget`:
+
+```python
+from aiogram_screens import Widget, WidgetScreen
+
+
+class Chart(WidgetScreen):
+    period: str
+
+    def create_widget(self) -> Widget:
+        return Widget(f"<b>{self.period}</b>", width=100, height=200)
+
+    def create_chat_data(self) -> str:
+        return "period"  # comes back in the widget's queries
+
+
+Chart(period="week").send(chat_id)  # SendWidget
+```
+
+`width`, `height` and `allow_queries` of `Widget` are optional. `create_caption()`,
+`create_chat_data()` and `create_reply_markup()` are optional methods and return
+`None` by default.
+
+The widget body is always HTML; `parse_mode` applies to the caption only. A
+widget message can't be edited in place, and a widget can't be sent to a
+business connection or a direct messages topic — `SendWidget` has no fields
+for them.
+
 ### Fields
 
 Screens are declared like dataclasses: annotated class attributes become
@@ -117,9 +150,9 @@ class Counter(EditableTextMessageScreen[str]):
         )
 
 
-Counter()            # value=0
-Counter(value=5)     # value=5
-Counter(valeu=5)     # TypeError: Counter() got unexpected keyword arguments: 'valeu'
+Counter()  # value=0
+Counter(value=5)  # value=5
+Counter(valeu=5)  # TypeError: Counter() got unexpected keyword arguments: 'valeu'
 ```
 
 Fields are inherited, and a subclass can re-declare a field to change its
@@ -168,21 +201,46 @@ class Order(TextMessageScreen[str]):
         return f"{self.quantity} × {self.price} = {self.total}"
 
 
-Order(price=10, quantity=3)            # "3 × 10 = 30"
-Order(price=10, quantity=3, total=1)   # TypeError
+Order(price=10, quantity=3)  # "3 × 10 = 30"
+Order(price=10, quantity=3, total=1)  # TypeError
 ```
 
 `field()` is a PEP 681 field specifier, so mypy and pyright understand it too:
 both report `total=1` as an unexpected argument. Pass the arguments literally
 (`init=False`, not `init=SOME_FLAG`) — type checkers don't evaluate expressions.
 
+### Combining screens
+
+A screen can inherit several bases and is then usable in every role they
+provide. For example, a screen that is both an editable message and a callback
+query answer shares one `create_text()`:
+
+```python
+from aiogram_screens import CallbackQueryAnswerScreen, EditableTextMessageScreen
+
+
+class Saved(EditableTextMessageScreen[str], CallbackQueryAnswerScreen):
+    def create_text(self) -> str:
+        return "Saved!"
+
+
+Saved().send(chat_id)  # SendMessage
+Saved().edit(message=message)  # EditMessageText
+await Saved().answer(query)  # AnswerCallbackQuery
+```
+
+`answer()` uses only the text — the reply markup of the message roles is
+ignored. Bases of different kinds can't be combined: a text screen and a widget
+screen disagree on what a screen holds, so only the first base in the MRO would
+be used.
+
 ## Sending, editing, answering
 
 ```python
 screen = Counter(value=1)
 
-screen.send(chat_id, message_thread_id=7)              # SendMessage
-screen.edit(message=message)                           # EditMessageText
+screen.send(chat_id, message_thread_id=7)  # SendMessage
+screen.edit(message=message)  # EditMessageText
 screen.edit(chat_id=chat_id, message_id=message_id)
 screen.edit(inline_message_id=inline_message_id)
 ```
@@ -196,13 +254,13 @@ message.
 from aiogram_screens import CallbackQueryAnswerScreen
 
 
-class Saved(CallbackQueryAnswerScreen):
+class Notified(CallbackQueryAnswerScreen):
     def create_text(self) -> str:
         return "Saved!"
 
 
-await Saved().answer(query, show_alert=True)  # bound to the query's bot
-await bot(Saved().answer(query.id))           # a plain method, send it explicitly
+await Notified().answer(query, show_alert=True)  # bound to the query's bot
+await bot(Notified().answer(query.id))  # a plain method, send it explicitly
 ```
 
 ### Returned methods are not sent
@@ -241,6 +299,12 @@ async def increment(query: CallbackQuery) -> TelegramMethod[Any] | None:
 | `edit_or_replace(message)` | Edited in place if the screen is an `EditableTextMessageScreen` and the message is an accessible text or rich message; otherwise as `replace` (a media message can't be edited into a text one) | Sent only on fallback |
 | `new(message)` | Its keyboard is removed | Sent; with `reply_parameters=NewReplyParameters(...)` it replies to the old message |
 
+A `WidgetScreen` is supported by all three methods. A widget message can't be
+edited in place, so `edit_or_replace()` always replaces it. Because `SendWidget`
+has no fields for a business connection or a direct messages topic, all three
+methods raise `ValueError` when the old message belongs to one — *before* the
+old message is touched.
+
 > [!IMPORTANT]
 > The old message is deleted (or its keyboard removed) **immediately**, when you
 > call the method; the new message is only built and is sent when the
@@ -275,10 +339,10 @@ The project is managed with [uv](https://docs.astral.sh/uv/); checks run with
 uv sync                    # create .venv with the linters and tests groups
 uv run pytest              # quick test run on the pinned Python (3.11)
 
-uvx nox                    # lint + tests on Python 3.11–3.14 + combined coverage
+uvx nox                    # lint + tests on Python 3.11–3.15 + combined coverage
 uvx nox -s format          # ruff check --fix + ruff format
 uvx nox -s lint            # ruff check, ruff format --check, mypy --strict
-uvx nox -s tests-3.14      # tests on one Python version
+uvx nox -s tests-3.15      # tests on one Python version
 ```
 
 ## License
