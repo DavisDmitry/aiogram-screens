@@ -6,6 +6,7 @@ from aiogram.methods import (
     EditMessageText,
     SendMessage,
     SendRichMessage,
+    SendWidget,
 )
 from aiogram.types import (
     CallbackQuery,
@@ -20,6 +21,8 @@ from aiogram_screens import (
     EditableTextMessageScreen,
     FrozenScreenError,
     TextMessageScreen,
+    Widget,
+    WidgetScreen,
     field,
 )
 from aiogram_screens._meta import ScreenMeta
@@ -56,6 +59,27 @@ class Menu(EditableTextMessageScreen[str]):
 class Pong(CallbackQueryAnswerScreen):
     def create_text(self) -> str:
         return "pong"
+
+
+class MenuAnswer(EditableTextMessageScreen[str], CallbackQueryAnswerScreen):
+    """A screen usable both as a message and as a callback query answer."""
+
+    def create_text(self) -> str:
+        return "both"
+
+
+class Chart(WidgetScreen):
+    def create_widget(self) -> Widget:
+        return Widget("<b>chart</b>", width=100, height=200, allow_queries=True)
+
+    def create_chat_data(self) -> str:
+        return "chat-data"
+
+    def create_caption(self) -> str:
+        return "caption"
+
+    def create_reply_markup(self) -> InlineKeyboardMarkup:
+        return KEYBOARD
 
 
 # --- fields and construction ---
@@ -348,6 +372,39 @@ def test_edit_rich_message() -> None:
     assert method.rich_message == rich
 
 
+# --- WidgetScreen.send ---
+
+
+def test_send_widget() -> None:
+    method = Chart().send(1, message_thread_id=7, parse_mode="HTML")
+    assert isinstance(method, SendWidget)
+    assert method.chat_id == 1
+    assert method.html == "<b>chart</b>"
+    assert (method.width, method.height) == (100, 200)
+    assert method.allow_queries is True
+    assert method.chat_data == "chat-data"
+    assert method.caption == "caption"
+    assert method.reply_markup == KEYBOARD
+    assert method.message_thread_id == 7
+    assert method.parse_mode == "HTML"
+
+
+def test_send_minimal_widget() -> None:
+    class Minimal(WidgetScreen):
+        def create_widget(self) -> Widget:
+            return Widget("<b>min</b>")
+
+    method = Minimal().send(1)
+    assert isinstance(method, SendWidget)
+    assert method.html == "<b>min</b>"
+    assert method.width is None
+    assert method.height is None
+    assert method.allow_queries is None
+    assert method.chat_data is None
+    assert method.caption is None
+    assert method.reply_markup is None
+
+
 # --- CallbackQueryAnswerScreen.answer ---
 
 
@@ -370,3 +427,26 @@ def test_answer_by_query() -> None:
     assert isinstance(method, AnswerCallbackQuery)
     assert method.callback_query_id == "query-id"
     assert method.text == "pong"
+
+
+# --- dual-purpose screens ---
+
+
+def test_screen_can_be_message_and_callback_answer() -> None:
+    # Inheriting both bases must leave the screen usable in both roles: the
+    # shared create_text() feeds the message text and the callback answer.
+    screen = MenuAnswer()
+    assert isinstance(screen, EditableTextMessageScreen)
+    assert isinstance(screen, CallbackQueryAnswerScreen)
+
+    message = screen.send(1)
+    assert isinstance(message, SendMessage)
+    assert message.text == "both"
+
+    edit = screen.edit(chat_id=1, message_id=2)
+    assert isinstance(edit, EditMessageText)
+    assert edit.text == "both"
+
+    answer = screen.answer("query-id")
+    assert isinstance(answer, AnswerCallbackQuery)
+    assert (answer.callback_query_id, answer.text) == ("query-id", "both")
